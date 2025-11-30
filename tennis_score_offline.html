@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Tennis Score Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 100%;
+            height: 98vh;
+            max-height: 98vh;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #1e3c72;
+            margin-bottom: 8px;
+            font-size: clamp(1.5em, 4vw, 2.5em);
+        }
+
+        .scoreboard {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .score-display {
+            background: transparent;
+            padding: 0;
+            border-radius: 0;
+            margin-bottom: clamp(5px, 1vh, 10px);
+            flex: 0 1 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: clamp(5px, 1vh, 10px);
+            min-height: 0;
+        }
+
+        .team-score {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: clamp(8px, 1.5vw, 15px);
+            align-items: center;
+            padding: clamp(10px, 2vh, 20px);
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .team-name-label {
+            font-size: clamp(22px, 4.5vw, 55px);
+            font-weight: bold;
+            color: #2c3e50;
+            word-break: break-word;
+            text-align: left;
+        }
+
+        button {
+            background: #2a5298;
+            color: white;
+            border: none;
+            padding: clamp(10px, 2vh, 14px) clamp(18px, 3vw, 26px);
+            font-size: clamp(14px, 2.5vw, 17px);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(42, 82, 152, 0.3);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        button:active {
+            transform: scale(0.95);
+            background: #1e3c72;
+        }
+
+        .team-game-btn {
+            background: #27ae60;
+            padding: clamp(12px, 2vh, 20px) clamp(15px, 3vw, 25px);
+            font-size: clamp(16px, 2.5vw, 22px);
+            white-space: nowrap;
+            display: none;
+        }
+
+        .sets-won {
+            font-size: clamp(72px, 16.875vw, 180px);
+            font-weight: bold;
+            color: #1e3c72;
+            text-align: center;
+            line-height: 1;
+        }
+
+        .game-score {
+            font-size: clamp(72px, 16.875vw, 180px);
+            font-weight: bold;
+            color: #27ae60;
+            text-align: center;
+            line-height: 1;
+            background: #e8f8f0;
+            padding: clamp(15px, 3vh, 30px);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 3px solid transparent;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(39, 174, 96, 0.3);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        .game-score:hover {
+            background: #d4f1e3;
+            border-color: #27ae60;
+        }
+
+        .game-score:active {
+            transform: scale(0.95);
+            background: #27ae60;
+            color: white;
+        }
+
+        .game-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .voice-btn {
+            background: #9b59b6;
+            padding: 8px 18px;
+            position: relative;
+        }
+
+        .voice-btn:hover {
+            background: #8e44ad;
+        }
+
+        .voice-btn.listening {
+            background: #e74c3c;
+            animation: pulse 1.5s infinite;
+        }
+
+        .voice-btn.listening::after {
+            content: ' (Active)';
+            font-size: 0.8em;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .voice-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px 40px;
+            border-radius: 10px;
+            font-size: 24px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .voice-feedback.show {
+            display: block;
+        }
+
+        .undo-btn {
+            background: #e74c3c;
+            padding: 8px 18px;
+        }
+
+        .undo-btn:hover {
+            background: #c0392b;
+        }
+
+        .reset-btn {
+            background: #95a5a6;
+            padding: 8px 18px;
+        }
+
+        .reset-btn:hover {
+            background: #7f8c8d;
+        }
+
+        .new-set-btn {
+            background: #f39c12;
+            padding: 8px 18px;
+        }
+
+        .new-set-btn:hover {
+            background: #e67e22;
+        }
+
+        @media (max-width: 600px) {
+            .team-score {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .team-name-label {
+                text-align: center;
+            }
+
+            .sets-won, .game-score {
+                font-size: clamp(78px, 20.25vw, 135px);
+            }
+        }
+
+        @media (orientation: landscape) {
+            .container {
+                padding: 5px;
+            }
+
+            h1 {
+                margin-bottom: 5px;
+                font-size: clamp(1.2em, 3vh, 2em);
+            }
+
+            .score-display {
+                padding: clamp(5px, 1vh, 10px);
+                gap: clamp(5px, 1vh, 8px);
+            }
+
+            .team-score {
+                padding: clamp(8px, 1.5vh, 15px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎾 Tennis Score Tracker</h1>
+        
+        <div class="scoreboard">
+            <div class="score-display">
+                <div class="team-score">
+                    <div class="team-name-label" id="team1Name">Team 1</div>
+                    <div class="sets-won" id="team1Sets">0</div>
+                    <div class="game-score" id="team1Games">0</div>
+                </div>
+                <div class="team-score">
+                    <div class="team-name-label" id="team2Name">Team 2</div>
+                    <div class="sets-won" id="team2Sets">0</div>
+                    <div class="game-score" id="team2Games">0</div>
+                </div>
+            </div>
+
+            <div class="game-controls">
+                <button class="voice-btn" id="voiceBtn">🎤 Voice</button>
+                <button class="undo-btn" id="undoBtn">Undo</button>
+                <button class="new-set-btn" id="newSetBtn">New Set</button>
+                <button class="reset-btn" id="resetBtn">Reset Match</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="voice-feedback" id="voiceFeedback"></div>
+
+    <script>
+        (function() {
+            var matchState = {
+                team1: { name: 'Team 1', sets: 0, games: 0 },
+                team2: { name: 'Team 2', sets: 0, games: 0 },
+                currentSet: 1,
+                history: []
+            };
+
+            var recognition = null;
+            var isListening = false;
+
+            function initVoiceRecognition() {
+                var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                
+                if (!SpeechRecognition) {
+                    console.log('Speech recognition not supported');
+                    return null;
+                }
+
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+
+                recognition.onstart = function() {
+                    isListening = true;
+                    var voiceBtn = document.getElementById('voiceBtn');
+                    if (voiceBtn) {
+                        voiceBtn.classList.add('listening');
+                        voiceBtn.textContent = '🎤 Stop';
+                    }
+                };
+
+                recognition.onend = function() {
+                    var voiceBtn = document.getElementById('voiceBtn');
+                    
+                    // Restart if we want to keep listening
+                    if (isListening) {
+                        if (voiceBtn) {
+                            voiceBtn.classList.add('listening');
+                            voiceBtn.textContent = '🎤 Stop';
+                        }
+                        
+                        // Android needs a longer delay
+                        setTimeout(function() {
+                            if (isListening) {
+                                try {
+                                    recognition.start();
+                                } catch (e) {
+                                    console.log('Recognition restart error:', e);
+                                    // Try again with longer delay
+                                    setTimeout(function() {
+                                        if (isListening) {
+                                            try {
+                                                recognition.start();
+                                            } catch (e2) {
+                                                console.log('Second restart failed:', e2);
+                                                isListening = false;
+                                                if (voiceBtn) {
+                                                    voiceBtn.classList.remove('listening');
+                                                    voiceBtn.textContent = '🎤 Voice';
+                                                }
+                                                showVoiceFeedback('Voice stopped. Tap to restart.');
+                                            }
+                                        }
+                                    }, 500);
+                                }
+                            }
+                        }, 300);
+                    } else {
+                        if (voiceBtn) {
+                            voiceBtn.classList.remove('listening');
+                            voiceBtn.textContent = '🎤 Voice';
+                        }
+                    }
+                };
+
+                recognition.onresult = function(event) {
+                    var last = event.results.length - 1;
+                    var transcript = event.results[last][0].transcript.toLowerCase().trim();
+                    console.log('Heard:', transcript);
+                    
+                    // Check if user wants to stop listening
+                    if (transcript.includes('stop listening') || 
+                        transcript.includes('stop voice') || 
+                        transcript.includes('turn off') ||
+                        transcript.includes('voice off')) {
+                        showVoiceFeedback('Voice recognition OFF');
+                        isListening = false;
+                        recognition.stop();
+                        return;
+                    }
+                    
+                    showVoiceFeedback('Heard: ' + transcript);
+                    processVoiceCommand(transcript);
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    
+                    if (event.error === 'not-allowed') {
+                        isListening = false;
+                        var voiceBtn = document.getElementById('voiceBtn');
+                        if (voiceBtn) {
+                            voiceBtn.classList.remove('listening');
+                            voiceBtn.textContent = '🎤 Voice';
+                        }
+                        showMicrophonePermissionAlert();
+                    } else if (event.error === 'no-speech') {
+                        // Just continue listening, don't show error
+                        console.log('No speech detected, continuing...');
+                    } else if (event.error === 'aborted') {
+                        // User stopped it, don't restart
+                        isListening = false;
+                    } else {
+                        showVoiceFeedback('Error: ' + event.error);
+                    }
+                };
+
+                return recognition;
+            }
+
+            function processVoiceCommand(command) {
+                console.log('Processing command:', command);
+                
+                // Team 1 commands - new format: "game team 1"
+                if ((command.includes('game') && (command.includes('team 1') || command.includes('team one') || 
+                    command.includes('team1') || command.includes('teamone') || 
+                    command.includes('tim 1') || command.includes('tim one'))) ||
+                    command.includes('game team 1') || command.includes('game team one') ||
+                    command.includes('game tim 1') || command.includes('game tim one')) {
+                    addGame(1);
+                    showVoiceFeedback('Team 1 +1');
+                }
+                // Team 2 commands - new format: "game team 2"
+                else if ((command.includes('game') && (command.includes('team 2') || command.includes('team two') || 
+                         command.includes('team2') || command.includes('teamtwo') ||
+                         command.includes('tim 2') || command.includes('tim two'))) ||
+                         command.includes('game team 2') || command.includes('game team two') ||
+                         command.includes('game tim 2') || command.includes('game tim two')) {
+                    addGame(2);
+                    showVoiceFeedback('Team 2 +1');
+                }
+                // Undo command
+                else if (command.includes('undo') || command.includes('back')) {
+                    undoGame();
+                    showVoiceFeedback('Undo');
+                }
+                // New set command
+                else if (command.includes('new set') || command.includes('next set')) {
+                    newSet();
+                    showVoiceFeedback('New Set');
+                }
+                // Reset command
+                else if (command.includes('reset') || command.includes('restart')) {
+                    resetMatch();
+                    showVoiceFeedback('Reset Match');
+                }
+                else {
+                    showVoiceFeedback('Not recognized: ' + command);
+                }
+            }
+
+            function showVoiceFeedback(message) {
+                console.log('Voice feedback:', message);
+                var feedback = document.getElementById('voiceFeedback');
+                if (feedback) {
+                    feedback.textContent = message;
+                    feedback.classList.add('show');
+                    setTimeout(function() {
+                        feedback.classList.remove('show');
+                    }, 2000);
+                }
+            }
+
+            function toggleVoiceRecognition() {
+                if (!recognition) {
+                    recognition = initVoiceRecognition();
+                    if (!recognition) {
+                        alert('Voice recognition is not supported on this device/browser');
+                        return;
+                    }
+                }
+
+                if (isListening) {
+                    // Stop listening
+                    isListening = false;
+                    try {
+                        recognition.stop();
+                    } catch (e) {
+                        console.log('Stop error:', e);
+                    }
+                    showVoiceFeedback('Voice recognition OFF');
+                } else {
+                    // Check microphone permission first (for Android/Chrome)
+                    if (navigator.permissions && navigator.permissions.query) {
+                        navigator.permissions.query({ name: 'microphone' }).then(function(result) {
+                            if (result.state === 'denied') {
+                                showMicrophonePermissionAlert();
+                                return;
+                            }
+                            startRecognition();
+                        }).catch(function(err) {
+                            // Permissions API not supported, just try to start
+                            startRecognition();
+                        });
+                    } else {
+                        // No permissions API, just try to start
+                        startRecognition();
+                    }
+                }
+            }
+
+            function startRecognition() {
+                try {
+                    // Force stop first in case it's already running
+                    try {
+                        recognition.stop();
+                    } catch (e) {
+                        // Ignore error
+                    }
+                    
+                    // Wait a bit before starting (Android needs this)
+                    setTimeout(function() {
+                        try {
+                            recognition.start();
+                            showVoiceFeedback('Voice recognition ON');
+                        } catch (e) {
+                            console.error('Error starting recognition:', e);
+                            
+                            // Try one more time after longer delay
+                            setTimeout(function() {
+                                try {
+                                    recognition.start();
+                                    showVoiceFeedback('Voice recognition ON');
+                                } catch (e2) {
+                                    showVoiceFeedback('Please tap Voice button again');
+                                    isListening = false;
+                                }
+                            }, 500);
+                        }
+                    }, 200);
+                } catch (e) {
+                    console.error('Error starting recognition:', e);
+                    showVoiceFeedback('Error: Try tapping Voice again');
+                    isListening = false;
+                }
+            }
+
+            function showMicrophonePermissionAlert() {
+                var urlInfo = window.location.protocol === 'file:' ? 
+                    '\n⚠️ PROBLEM: You\'re opening as file://\nVoice recognition requires http:// or https://\n\n' : 
+                    '';
+                    
+                alert('🎤 Microphone Permission Required!\n\n' +
+                      urlInfo +
+                      'ANDROID CHROME - Try these in order:\n\n' +
+                      '1. SYSTEM SETTINGS (Most Reliable):\n' +
+                      '   • Settings > Apps > Chrome\n' +
+                      '   • Tap "Permissions"\n' +
+                      '   • Tap "Microphone"\n' +
+                      '   • Select "Allow"\n' +
+                      '   • Return to this page\n\n' +
+                      '2. CHROME APP SETTINGS:\n' +
+                      '   • Long-press Chrome icon\n' +
+                      '   • Tap App info (i)\n' +
+                      '   • Permissions > Microphone > Allow\n\n' +
+                      '3. If file:// in address bar:\n' +
+                      '   Voice WILL NOT work with file://\n' +
+                      '   Install "Simple HTTP Server" app\n' +
+                      '   Open via http://localhost:8080/\n\n' +
+                      'NOTE: App works perfectly without voice!\n' +
+                      'Use the "+1 Game" buttons instead.');
+            }
+
+            function addGame(team) {
+                saveHistory();
+
+                if (team === 1) {
+                    matchState.team1.games++;
+                } else {
+                    matchState.team2.games++;
+                }
+
+                checkSetWin();
+                updateDisplay();
+            }
+
+            function checkSetWin() {
+                var t1 = matchState.team1;
+                var t2 = matchState.team2;
+                var setWon = false;
+
+                if (t1.games >= 6 && t1.games - t2.games >= 2) {
+                    t1.sets++;
+                    setWon = true;
+                } else if (t2.games >= 6 && t2.games - t1.games >= 2) {
+                    t2.sets++;
+                    setWon = true;
+                } else if (t1.games === 7 && t2.games === 6) {
+                    t1.sets++;
+                    setWon = true;
+                } else if (t2.games === 7 && t1.games === 6) {
+                    t2.sets++;
+                    setWon = true;
+                }
+
+                if (setWon) {
+                    t1.games = 0;
+                    t2.games = 0;
+                    matchState.currentSet++;
+                }
+            }
+
+            function newSet() {
+                saveHistory();
+                var t1 = matchState.team1;
+                var t2 = matchState.team2;
+
+                if (t1.games > t2.games) {
+                    t1.sets++;
+                } else if (t2.games > t1.games) {
+                    t2.sets++;
+                }
+
+                t1.games = 0;
+                t2.games = 0;
+                matchState.currentSet++;
+                updateDisplay();
+            }
+
+            function updateDisplay() {
+                document.getElementById('team1Sets').textContent = matchState.team1.sets;
+                document.getElementById('team2Sets').textContent = matchState.team2.sets;
+                document.getElementById('team1Games').textContent = matchState.team1.games;
+                document.getElementById('team2Games').textContent = matchState.team2.games;
+            }
+
+            function saveHistory() {
+                matchState.history.push(JSON.stringify({
+                    team1: {name: matchState.team1.name, sets: matchState.team1.sets, games: matchState.team1.games},
+                    team2: {name: matchState.team2.name, sets: matchState.team2.sets, games: matchState.team2.games},
+                    currentSet: matchState.currentSet
+                }));
+            }
+
+            function undoGame() {
+                if (matchState.history.length === 0) return;
+
+                var lastState = JSON.parse(matchState.history.pop());
+                matchState.team1 = lastState.team1;
+                matchState.team2 = lastState.team2;
+                matchState.currentSet = lastState.currentSet;
+                updateDisplay();
+            }
+
+            function resetMatch() {
+                matchState = {
+                    team1: { name: 'Team 1', sets: 0, games: 0 },
+                    team2: { name: 'Team 2', sets: 0, games: 0 },
+                    currentSet: 1,
+                    history: []
+                };
+                
+                document.getElementById('team1Name').textContent = 'Team 1';
+                document.getElementById('team2Name').textContent = 'Team 2';
+                updateDisplay();
+            }
+
+            function attachEventHandlers() {
+                var team1Games = document.getElementById('team1Games');
+                var team2Games = document.getElementById('team2Games');
+                var undoBtn = document.getElementById('undoBtn');
+                var newSetBtn = document.getElementById('newSetBtn');
+                var resetBtn = document.getElementById('resetBtn');
+                var voiceBtn = document.getElementById('voiceBtn');
+
+                if (team1Games) {
+                    team1Games.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        addGame(1);
+                    }, { passive: false });
+                    team1Games.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        addGame(1);
+                    });
+                }
+
+                if (team2Games) {
+                    team2Games.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        addGame(2);
+                    }, { passive: false });
+                    team2Games.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        addGame(2);
+                    });
+                }
+
+                if (undoBtn) {
+                    undoBtn.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        undoGame();
+                    }, { passive: false });
+                    undoBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        undoGame();
+                    });
+                }
+
+                if (newSetBtn) {
+                    newSetBtn.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        newSet();
+                    }, { passive: false });
+                    newSetBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        newSet();
+                    });
+                }
+
+                if (resetBtn) {
+                    resetBtn.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        resetMatch();
+                    }, { passive: false });
+                    resetBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        resetMatch();
+                    });
+                }
+
+                if (voiceBtn) {
+                    voiceBtn.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        toggleVoiceRecognition();
+                    }, { passive: false });
+                    voiceBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        toggleVoiceRecognition();
+                    });
+                }
+            }
+
+            // Initialize when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', attachEventHandlers);
+            } else {
+                attachEventHandlers();
+            }
+        })();
+    </script>
+</body>
+</html>
