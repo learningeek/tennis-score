@@ -293,6 +293,7 @@
                 <button class="undo-btn" id="undoBtn">Undo</button>
                 <button class="new-set-btn" id="newSetBtn">New Set</button>
                 <button class="reset-btn" id="resetBtn">Reset</button>
+                <button class="voice-btn" id="testSpeechBtn" style="background: #9b59b6;">🔊 Test Audio</button>
             </div>
         </div>
     </div>
@@ -502,6 +503,39 @@
                 
                 showVoiceFeedback('Announcing score...');
                 speak(announcement);
+            }
+
+            function testSpeech() {
+                showVoiceFeedback('Testing audio...');
+                
+                if (!('speechSynthesis' in window)) {
+                    alert('Speech synthesis not supported on this device');
+                    return;
+                }
+                
+                // Simple test
+                var msg = new SpeechSynthesisUtterance('Hello. This is a test. Can you hear me?');
+                msg.volume = 1.0;
+                msg.rate = 1.0;
+                msg.pitch = 1.0;
+                
+                msg.onstart = function() {
+                    console.log('Speech started');
+                    showVoiceFeedback('Speech started!');
+                };
+                
+                msg.onend = function() {
+                    console.log('Speech ended');
+                    showVoiceFeedback('Speech ended!');
+                };
+                
+                msg.onerror = function(e) {
+                    console.error('Speech error:', e);
+                    alert('Speech Error: ' + e.error + '\n\nCheck:\n1. Volume is UP\n2. Silent mode is OFF\n3. Not using headphones?\n4. Try on Mac/PC instead');
+                };
+                
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(msg);
             }
 
             function speak(text) {
@@ -782,6 +816,7 @@
                 var newSetBtn = document.getElementById('newSetBtn');
                 var resetBtn = document.getElementById('resetBtn');
                 var voiceBtn = document.getElementById('voiceBtn');
+                var testSpeechBtn = document.getElementById('testSpeechBtn');
 
                 if (team1Games) {
                     team1Games.addEventListener('touchstart', function(e) {
@@ -846,6 +881,17 @@
                     voiceBtn.addEventListener('click', function(e) {
                         e.preventDefault();
                         toggleVoiceRecognition();
+                    });
+                }
+
+                if (testSpeechBtn) {
+                    testSpeechBtn.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        testSpeech();
+                    }, { passive: false });
+                    testSpeechBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        testSpeech();
                     });
                 }
             }
