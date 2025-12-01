@@ -187,6 +187,29 @@
             50% { opacity: 0.6; }
         }
 
+        @keyframes scoreFlash {
+            0%, 100% { 
+                background: white;
+                transform: scale(1);
+            }
+            25% { 
+                background: #fff9e6;
+                transform: scale(1.05);
+            }
+            50% { 
+                background: #ffe699;
+                transform: scale(1.1);
+            }
+            75% { 
+                background: #fff9e6;
+                transform: scale(1.05);
+            }
+        }
+
+        .score-flash {
+            animation: scoreFlash 1s ease-in-out 2;
+        }
+
         .voice-feedback {
             position: fixed;
             top: 50%;
@@ -502,7 +525,31 @@
                                   'Games: Team 1 has ' + t1Games + ', Team 2 has ' + t2Games + '.';
                 
                 showVoiceFeedback('Announcing score...');
+                
+                // Visual feedback - flash the scores
+                flashScores();
+                
+                // Audio announcement (works on Mac, may not work on iPhone)
                 speak(announcement);
+            }
+
+            function flashScores() {
+                var team1Score = document.querySelector('.team-score:nth-child(1)');
+                var team2Score = document.querySelector('.team-score:nth-child(2)');
+                
+                if (team1Score) {
+                    team1Score.classList.add('score-flash');
+                    setTimeout(function() {
+                        team1Score.classList.remove('score-flash');
+                    }, 2000);
+                }
+                
+                if (team2Score) {
+                    team2Score.classList.add('score-flash');
+                    setTimeout(function() {
+                        team2Score.classList.remove('score-flash');
+                    }, 2000);
+                }
             }
 
             function testSpeech() {
