@@ -425,6 +425,13 @@
             function processVoiceCommand(command) {
                 console.log('Processing command:', command);
                 
+                // Score query commands
+                if (command.includes('score') || command.includes('what\'s the score') || 
+                    command.includes('current score') || command.includes('tell me the score')) {
+                    announceScore();
+                    return;
+                }
+                
                 // Team 1 commands - new format: "game team 1"
                 if ((command.includes('game') && (command.includes('team 1') || command.includes('team one') || 
                     command.includes('team1') || command.includes('teamone') || 
@@ -460,6 +467,46 @@
                 }
                 else {
                     showVoiceFeedback('Not recognized: ' + command);
+                }
+            }
+
+            function announceScore() {
+                var t1Sets = matchState.team1.sets;
+                var t2Sets = matchState.team2.sets;
+                var t1Games = matchState.team1.games;
+                var t2Games = matchState.team2.games;
+                var currentSet = matchState.currentSet;
+                
+                var announcement = 'Set ' + currentSet + '. ' +
+                                  'Sets: Team 1 has ' + t1Sets + ', Team 2 has ' + t2Sets + '. ' +
+                                  'Games: Team 1 has ' + t1Games + ', Team 2 has ' + t2Games + '.';
+                
+                showVoiceFeedback('Announcing score...');
+                speak(announcement);
+            }
+
+            function speak(text) {
+                if ('speechSynthesis' in window) {
+                    // Cancel any ongoing speech
+                    window.speechSynthesis.cancel();
+                    
+                    var utterance = new SpeechSynthesisUtterance(text);
+                    utterance.rate = 0.9; // Slightly slower for clarity
+                    utterance.pitch = 1.0;
+                    utterance.volume = 1.0;
+                    
+                    utterance.onend = function() {
+                        console.log('Finished speaking');
+                    };
+                    
+                    utterance.onerror = function(event) {
+                        console.error('Speech error:', event);
+                    };
+                    
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    console.log('Text-to-speech not supported');
+                    showVoiceFeedback('Speech not supported');
                 }
             }
 
