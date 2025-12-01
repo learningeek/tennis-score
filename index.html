@@ -292,7 +292,7 @@
                 <button class="voice-btn" id="voiceBtn">🎤 Voice</button>
                 <button class="undo-btn" id="undoBtn">Undo</button>
                 <button class="new-set-btn" id="newSetBtn">New Set</button>
-                <button class="reset-btn" id="resetBtn">Reset Match</button>
+                <button class="reset-btn" id="resetBtn">Reset</button>
             </div>
         </div>
     </div>
@@ -509,24 +509,56 @@
                     // Cancel any ongoing speech
                     window.speechSynthesis.cancel();
                     
-                    var utterance = new SpeechSynthesisUtterance(text);
-                    utterance.rate = 0.9; // Slightly slower for clarity
-                    utterance.pitch = 1.0;
-                    utterance.volume = 1.0;
+                    // Wait for voices to load (critical for iOS)
+                    var voices = window.speechSynthesis.getVoices();
                     
-                    utterance.onend = function() {
-                        console.log('Finished speaking');
-                    };
-                    
-                    utterance.onerror = function(event) {
-                        console.error('Speech error:', event);
-                    };
-                    
-                    window.speechSynthesis.speak(utterance);
+                    if (voices.length === 0) {
+                        // Voices not loaded yet, wait for them
+                        window.speechSynthesis.onvoiceschanged = function() {
+                            speakNow(text);
+                        };
+                    } else {
+                        speakNow(text);
+                    }
                 } else {
                     console.log('Text-to-speech not supported');
-                    showVoiceFeedback('Speech not supported');
+                    showVoiceFeedback('Speech not supported on this device');
                 }
+            }
+
+            function speakNow(text) {
+                var utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = 0.85; // Slower for better clarity on iOS
+                utterance.pitch = 1.0;
+                utterance.volume = 1.0;
+                utterance.lang = 'en-US';
+                
+                // Try to use a specific voice for better iOS compatibility
+                var voices = window.speechSynthesis.getVoices();
+                var englishVoice = voices.find(function(voice) {
+                    return voice.lang.startsWith('en');
+                });
+                
+                if (englishVoice) {
+                    utterance.voice = englishVoice;
+                    console.log('Using voice:', englishVoice.name);
+                }
+                
+                utterance.onstart = function() {
+                    console.log('Started speaking:', text);
+                };
+                
+                utterance.onend = function() {
+                    console.log('Finished speaking');
+                };
+                
+                utterance.onerror = function(event) {
+                    console.error('Speech error:', event);
+                    showVoiceFeedback('Speech error: ' + event.error);
+                };
+                
+                console.log('Speaking:', text);
+                window.speechSynthesis.speak(utterance);
             }
 
             function showVoiceFeedback(message) {
@@ -560,6 +592,14 @@
                     }
                     showVoiceFeedback('Voice recognition OFF');
                 } else {
+                    // Initialize speech synthesis on iOS (requires user interaction)
+                    if ('speechSynthesis' in window) {
+                        // Force load voices on iOS by speaking silence
+                        var init = new SpeechSynthesisUtterance('');
+                        init.volume = 0;
+                        window.speechSynthesis.speak(init);
+                    }
+                    
                     // Check microphone permission first (for Android/Chrome)
                     if (navigator.permissions && navigator.permissions.query) {
                         navigator.permissions.query({ name: 'microphone' }).then(function(result) {
