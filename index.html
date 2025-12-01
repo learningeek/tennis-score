@@ -430,10 +430,16 @@
             function processVoiceCommand(command) {
                 console.log('Processing command:', command);
                 
-                // Score query commands - check this FIRST
-                if (command.includes('score') || command.includes('what\'s the score') || 
-                    command.includes('whats the score') || command.includes('current score') || 
-                    command.includes('tell me the score') || command === 'score') {
+                // Score query commands - check this FIRST with many variations
+                if (command.includes('score') || command.includes('scores') ||
+                    command.includes('what') && command.includes('score') ||
+                    command.includes('tell') && command.includes('score') ||
+                    command.includes('current') && command.includes('score') ||
+                    command === 'score' || command === 'scores' ||
+                    command.includes('give me the score') ||
+                    command.includes('read the score') ||
+                    // Common misheard words for "score"
+                    command === 'store' || command === 'for' || command === 'four') {
                     console.log('Score command detected');
                     announceScore();
                     return;
@@ -479,6 +485,7 @@
                 }
                 
                 // If nothing matched
+                console.log('Command not matched:', command);
                 showVoiceFeedback('Not recognized: ' + command);
             }
 
