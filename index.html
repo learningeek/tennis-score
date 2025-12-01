@@ -381,6 +381,7 @@
                     var last = event.results.length - 1;
                     var transcript = event.results[last][0].transcript.toLowerCase().trim();
                     console.log('Heard:', transcript);
+                    console.log('Confidence:', event.results[last][0].confidence);
                     
                     // Check if user wants to stop listening
                     if (transcript.includes('stop listening') || 
@@ -394,7 +395,11 @@
                     }
                     
                     showVoiceFeedback('Heard: ' + transcript);
-                    processVoiceCommand(transcript);
+                    
+                    // Small delay to ensure feedback shows before processing
+                    setTimeout(function() {
+                        processVoiceCommand(transcript);
+                    }, 100);
                 };
 
                 recognition.onerror = function(event) {
@@ -425,9 +430,11 @@
             function processVoiceCommand(command) {
                 console.log('Processing command:', command);
                 
-                // Score query commands
+                // Score query commands - check this FIRST
                 if (command.includes('score') || command.includes('what\'s the score') || 
-                    command.includes('current score') || command.includes('tell me the score')) {
+                    command.includes('whats the score') || command.includes('current score') || 
+                    command.includes('tell me the score') || command === 'score') {
+                    console.log('Score command detected');
                     announceScore();
                     return;
                 }
@@ -440,34 +447,39 @@
                     command.includes('game tim 1') || command.includes('game tim one')) {
                     addGame(1);
                     showVoiceFeedback('Team 1 +1');
+                    return;
                 }
                 // Team 2 commands - new format: "game team 2"
-                else if ((command.includes('game') && (command.includes('team 2') || command.includes('team two') || 
+                if ((command.includes('game') && (command.includes('team 2') || command.includes('team two') || 
                          command.includes('team2') || command.includes('teamtwo') ||
                          command.includes('tim 2') || command.includes('tim two'))) ||
                          command.includes('game team 2') || command.includes('game team two') ||
                          command.includes('game tim 2') || command.includes('game tim two')) {
                     addGame(2);
                     showVoiceFeedback('Team 2 +1');
+                    return;
                 }
                 // Undo command
-                else if (command.includes('undo') || command.includes('back')) {
+                if (command.includes('undo') || command.includes('back')) {
                     undoGame();
                     showVoiceFeedback('Undo');
+                    return;
                 }
                 // New set command
-                else if (command.includes('new set') || command.includes('next set')) {
+                if (command.includes('new set') || command.includes('next set')) {
                     newSet();
                     showVoiceFeedback('New Set');
+                    return;
                 }
                 // Reset command
-                else if (command.includes('reset') || command.includes('restart')) {
+                if (command.includes('reset') || command.includes('restart')) {
                     resetMatch();
                     showVoiceFeedback('Reset Match');
+                    return;
                 }
-                else {
-                    showVoiceFeedback('Not recognized: ' + command);
-                }
+                
+                // If nothing matched
+                showVoiceFeedback('Not recognized: ' + command);
             }
 
             function announceScore() {
