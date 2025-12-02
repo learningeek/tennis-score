@@ -334,6 +334,7 @@
 
             var recognition = null;
             var isListening = false;
+            var isSpeechEnabled = false;  // Track if iOS speech is enabled
 
             function initVoiceRecognition() {
                 var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -560,11 +561,29 @@
                     return;
                 }
                 
-                // Simple test
+                // Enable speech for iOS if not already enabled
+                if (!isSpeechEnabled) {
+                    console.log('Enabling iOS speech via test button...');
+                    var silentUtterance = new SpeechSynthesisUtterance('');
+                    silentUtterance.volume = 0;
+                    window.speechSynthesis.speak(silentUtterance);
+                    isSpeechEnabled = true;
+                    
+                    // Wait a moment before testing
+                    setTimeout(function() {
+                        performSpeechTest();
+                    }, 100);
+                } else {
+                    performSpeechTest();
+                }
+            }
+
+            function performSpeechTest() {
                 var msg = new SpeechSynthesisUtterance('Hello. This is a test. Can you hear me?');
                 msg.volume = 1.0;
                 msg.rate = 1.0;
                 msg.pitch = 1.0;
+                msg.lang = 'en-US';
                 
                 msg.onstart = function() {
                     console.log('Speech started');
@@ -573,12 +592,12 @@
                 
                 msg.onend = function() {
                     console.log('Speech ended');
-                    showVoiceFeedback('Speech ended!');
+                    showVoiceFeedback('Speech ended! iOS TTS works!');
                 };
                 
                 msg.onerror = function(e) {
                     console.error('Speech error:', e);
-                    alert('Speech Error: ' + e.error + '\n\nCheck:\n1. Volume is UP\n2. Silent mode is OFF\n3. Not using headphones?\n4. Try on Mac/PC instead');
+                    alert('Speech Error: ' + e.error + '\n\nCheck:\n1. Volume is UP\n2. Silent mode is OFF\n3. Try tapping 🎤 Voice button first\n4. Reload page and try again');
                 };
                 
                 window.speechSynthesis.cancel();
@@ -673,12 +692,18 @@
                     }
                     showVoiceFeedback('Voice recognition OFF');
                 } else {
-                    // Initialize speech synthesis on iOS (requires user interaction)
-                    if ('speechSynthesis' in window) {
-                        // Force load voices on iOS by speaking silence
-                        var init = new SpeechSynthesisUtterance('');
-                        init.volume = 0;
-                        window.speechSynthesis.speak(init);
+                    // CRITICAL iOS FIX: Initialize speech synthesis with silent utterance
+                    if (!isSpeechEnabled && 'speechSynthesis' in window) {
+                        console.log('Enabling iOS speech synthesis...');
+                        var silentUtterance = new SpeechSynthesisUtterance('');
+                        silentUtterance.volume = 0;
+                        window.speechSynthesis.speak(silentUtterance);
+                        isSpeechEnabled = true;
+                        
+                        // Also load voices for iOS
+                        loadVoicesWhenAvailable(function() {
+                            console.log('Voices loaded and speech enabled for iOS');
+                        });
                     }
                     
                     // Check microphone permission first (for Android/Chrome)
@@ -697,6 +722,17 @@
                         // No permissions API, just try to start
                         startRecognition();
                     }
+                }
+            }
+
+            function loadVoicesWhenAvailable(onComplete) {
+                var voices = window.speechSynthesis.getVoices();
+                if (voices.length !== 0) {
+                    onComplete();
+                } else {
+                    setTimeout(function() {
+                        loadVoicesWhenAvailable(onComplete);
+                    }, 100);
                 }
             }
 
